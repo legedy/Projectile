@@ -1,4 +1,5 @@
 local RunService = game:GetService('RunService');
+local ReplicatedStorage = game:GetService('ReplicatedStorage');
 
 local Projectile = {};
 Projectile.__index = Projectile;
@@ -43,13 +44,22 @@ function Projectile:Toggle(overrideBool: boolean?)
 end
 
 function Projectile:Fire(Velocity: Vector3?, LifeTime: number?)
-	local Attachment = Instance.new('Attachment');
-	Attachment.Visible = true;
-	Attachment.Parent = workspace.Terrain;
+	local Attachment0 = Instance.new('Attachment');
+	Attachment0.Visible = true;
+	Attachment0.Parent = workspace.Terrain;
+	local Attachment1 = Instance.new('Attachment');
+	Attachment1.Visible = true;
+	Attachment1.Parent = workspace.Terrain;
+
+	local Trail = ReplicatedStorage.Trail:Clone();
+	Trail.Color = ColorSequence.new(Color3.fromHSV(math.random(), 1, 1));
+	Trail.Attachment0 = Attachment0;
+	Trail.Attachment1 = Attachment1;
+	Trail.Parent = Attachment0;
 
 	table.insert(self._Queue, {
 		Time = 0,
-		Attachment = Attachment,
+		Attachments = {Attachment0, Attachment1},
 		Velocity = Velocity or (self.Direction * self.Speed),
 		LifeTime = LifeTime or self.LifeTime
 	});
@@ -67,13 +77,15 @@ function Projectile:_Step(deltaTime)
 	for key, v in pairs(self._Queue) do
 		coroutine.wrap(function()
 			if (v.Time >= v.LifeTime) then
-				v.Attachment:Destroy();
+				v.Attachments[1]:Destroy();
+				v.Attachments[2]:Destroy();
 				table.remove(self._Queue, key);
 				return
 			end
 	
-			v.Velocity -= (v.Velocity / 100);
-			v.Attachment.Position += v.Velocity * deltaTime;
+			v.Velocity -= Vector3.yAxis * (workspace.Gravity/100);
+			v.Attachments[1].Position += v.Velocity * deltaTime;
+			v.Attachments[2].Position = v.Attachments[1].Position + Vector3.yAxis
 			v.Time += deltaTime;
 		end)();
 	end
